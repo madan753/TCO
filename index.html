@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Total Cost Simulator — EV vs Petrol</title>
+  <meta name="theme-color" content="#0A0E14">
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            void: '#0A0E14',
+            panel: '#121821',
+            panel2: '#1A2232',
+            line: '#2A3447',
+            ink: '#E7EDF5',
+            mute: '#7E8CA0',
+            dim: '#52617A',
+            ev: '#33F2A0',
+            ev2: '#5BF5B8',
+            ev3: '#1AD88A',
+            petrol: '#FF8A3D',
+            petrol2: '#FFA866',
+            petrol3: '#E87020',
+            gold: '#FFD23F',
+            blue: '#7C9BFF'
+          },
+          fontFamily: {
+            display: ['Rajdhani', 'sans-serif'],
+            mono: ['"Share Tech Mono"', 'monospace'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; }
+    body {
+      background-color: #0A0E14;
+      background-image:
+        radial-gradient(circle at 12% -10%, rgba(51,242,160,0.07), transparent 42%),
+        radial-gradient(circle at 90% 110%, rgba(255,138,61,0.07), transparent 42%),
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: auto, auto, 28px 28px, 28px 28px;
+      font-family: 'Inter', sans-serif;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #121821; }
+    ::-webkit-scrollbar-thumb { background: #2A3447; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3A4660; }
+    .lcd { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.04em; }
+    .glow-ev { text-shadow: 0 0 8px rgba(51,242,160,.65), 0 0 20px rgba(51,242,160,.35); }
+    .glow-petrol { text-shadow: 0 0 8px rgba(255,138,61,.6), 0 0 20px rgba(255,138,61,.3); }
+    .glow-gold { text-shadow: 0 0 8px rgba(255,210,63,.65), 0 0 20px rgba(255,210,63,.35); }
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; background: #1C2533; outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent, #33F2A0); border: 2px solid #0A0E14; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 0 10px var(--accent, #33F2A0); margin-top: -5px; transition: transform .12s ease; }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .chip {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid #2A3447; color: #7E8CA0; background: #121821; cursor: pointer; transition: all .15s ease; user-select: none; white-space: nowrap;
+    }
+    .chip:hover { border-color: #52617A; color: #E7EDF5; }
+    .chip.active { background: rgba(255,210,63,.12); border-color: #FFD23F; color: #FFD23F; box-shadow: 0 0 10px rgba(255,210,63,.25); }
+    .toggle-btn {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid #2A3447; color: #7E8CA0; background: #121821; cursor: pointer; transition: all .15s ease; user-select: none;
+    }
+    .toggle-btn.active { background: rgba(124,155,255,.15); border-color: #7C9BFF; color: #7C9BFF; }
+    .flash-overlay { background: radial-gradient(circle at 50% 42%, rgba(51,242,160,.4), rgba(10,14,20,0) 68%); opacity: 0; }
+    .flash-overlay.show { animation: flashPulse 2.6s ease-out forwards; }
+    @keyframes flashPulse { 0% { opacity: 0; } 8% { opacity: 1; } 28% { opacity: .45; } 45% { opacity: .8; } 100% { opacity: 0; } }
+    .banner { opacity: 0; transform: translateY(-10px) scale(.6); }
+    .banner.show { animation: bannerPop 2.6s cubic-bezier(.16,1.4,.4,1) forwards; }
+    @keyframes bannerPop { 0% { opacity:0; transform:translateY(10px) scale(.4) rotate(-3deg); } 14% { opacity:1; transform:translateY(-6px) scale(1.08) rotate(1deg); } 22% { transform:translateY(-6px) scale(1) rotate(0); } 80% { opacity:1; } 100% { opacity:0; transform:translateY(-16px) scale(.94); } }
+    .shake-trigger.shake { animation: shakeKey .42s ease-in-out 2; }
+    @keyframes shakeKey { 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-6px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(4px); } }
+    #chartTooltip { position: absolute; pointer-events: none; background: rgba(10,14,20,0.9); border:1px solid #2A3447; border-radius:6px; padding:6px 10px; font-size:10px; font-family:'Share Tech Mono',monospace; color:#E7EDF5; display:none; z-index:50; }
+    .remove-btn { cursor: pointer; color: #7E8CA0; margin-left: 6px; font-weight: bold; transition: color 0.2s; }
+    .remove-btn:hover { color: #FF8A3D; }
+    .breakdown-table th, .breakdown-table td { padding: 4px 8px; font-size: 10px; font-family: 'Share Tech Mono', monospace; border-color: #2A3447; text-align: right; }
+    .breakdown-table th { color: #7E8CA0; font-weight: 500; }
+  </style>
+</head>
+<body class="text-ink antialiased">
+
+<header class="border-b border-line/80 bg-panel/85 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[1500px] mx-auto px-4 md:px-6 py-2 flex items-center justify-between">
+    <div>
+      <div class="text-2xl md:text-3xl font-display font-bold tracking-wide text-ink">Total Cost Simulator</div>
+      <h1 class="font-display text-base md:text-lg font-medium text-mute mt-0.5">
+        <span class="text-ev glow-ev">⚡ EV</span> vs <span class="text-petrol glow-petrol">🛵 PETROL</span>
+      </h1>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1500px] mx-auto px-4 md:px-6 py-5 flex flex-col lg:flex-row gap-5">
+  <aside class="w-full lg:w-[420px] shrink-0 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:sticky lg:top-[100px] pr-1">
+    <p class="text-[11px] text-dim mb-3.5 leading-relaxed">Set independent usage for EV & petrol, choose whether to include resale, and click the chart for precise values.</p>
+    <div id="sec-purchase"></div>
+    <div id="sec-resale"></div>
+    <div id="sec-usage"></div>
+    <div id="sec-fixed"></div>
+    <div id="sec-running"></div>
+    <div id="sec-maint"></div>
+    <button id="btnRestoreDefaults" class="w-full text-[11px] font-mono text-mute hover:text-ink border border-line hover:border-dim rounded-lg py-2.5 mt-1 mb-6 transition">↺ Restore Default Values</button>
+  </aside>
+
+  <section class="flex-1 min-w-0">
+    <div id="arenaWrap" class="shake-trigger relative rounded-xl overflow-hidden border border-line bg-panel mb-3">
+      <div class="absolute top-2 left-2 right-2 flex items-center gap-2 flex-wrap z-20">
+        <button id="btnPlayPause" class="font-display font-bold text-xs md:text-sm px-3 py-1.5 rounded-lg bg-ev text-void hover:brightness-110 active:scale-95 transition shadow-[0_0_18px_rgba(51,242,160,0.35)] whitespace-nowrap">▶ START</button>
+        <button id="btnReset" class="font-display font-bold text-xs md:text-sm px-2.5 py-1.5 rounded-lg border border-line text-ink/80 hover:bg-panel2 active:scale-95 transition whitespace-nowrap">⟲ RESET</button>
+        <span class="text-[9px] font-mono text-mute uppercase tracking-wider hidden sm:inline">Speed:</span>
+        <div id="speedChips" class="flex gap-1 flex-wrap"></div>
+        <span id="speedReadout" class="text-[10px] font-mono text-gold ml-0.5">1x</span>
+      </div>
+      <canvas id="trackCanvas" class="block w-full h-[280px] md:h-[360px]"></canvas>
+      <div id="flashOverlay" class="flash-overlay absolute inset-0 pointer-events-none"></div>
+      <div id="breakevenBanner" class="banner absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-4 text-center">
+        <div class="font-display text-2xl sm:text-3xl md:text-4xl font-extrabold text-ev glow-ev tracking-wide drop-shadow-[0_0_25px_rgba(51,242,160,0.5)]">⚡ BREAKEVEN ACHIEVED! ⚡</div>
+        <div id="breakevenDetail" class="font-mono text-xs md:text-sm text-ink/90 mt-1.5 bg-void/60 px-3 py-1 rounded-full border border-ev/30"></div>
+      </div>
+    </div>
+
+    <div id="liveFeed" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3"></div>
+    <div id="quickStats" class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3"></div>
+
+    <div id="achievedBadge" class="hidden mb-2.5 text-[11px] md:text-xs font-mono px-3 py-2 rounded-lg border border-ev/40 bg-ev/10 text-ev glow-ev"></div>
+    <div id="completeBadge" class="hidden mb-2.5 text-[11px] md:text-xs font-mono px-3 py-2 rounded-lg border border-gold/40 bg-gold/10 text-gold glow-gold"></div>
+
+    <div class="rounded-xl border border-line bg-panel p-3 md:p-4 relative" id="chartContainer">
+      <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <h3 class="font-display text-sm font-bold tracking-wide text-ink/90 uppercase">Cumulative Expenditure (click for details)</h3>
+        <div id="chartLegend" class="flex items-center gap-2 flex-wrap text-[9px] font-mono"></div>
+      </div>
+      <canvas id="chartCanvas" class="block w-full h-[220px] md:h-[260px] cursor-crosshair"></canvas>
+      <div id="chartTooltip"></div>
+    </div>
+
+    <div class="rounded-xl border border-line bg-panel p-3 md:p-4 mt-3">
+      <h3 class="font-display text-sm font-bold tracking-wide text-ink/90 uppercase mb-3">Year‑by‑Year Cost Breakdown</h3>
+      <div class="overflow-x-auto">
+        <table id="breakdownTable" class="breakdown-table w-full text-[10px] border-collapse border border-line"></table>
+      </div>
+    </div>
+
+    <p class="text-[10px] text-dim mt-3 leading-relaxed">
+      Net cost = purchase + running + fixed − resale (if included). <span class="text-ev/80">EV battery degrades 5% per 10,000 km</span> (↑ electricity). <span class="text-petrol/80">Petrol engine loses 5% mileage per 15,000 km</span> (↑ fuel). Maintenance drifts slightly with distance. Click chart for detailed values.
+    </p>
+  </section>
+</main>
+
+<script>
+(function() {
+"use strict";
+
+const C = { ev:'#33F2A0', ev2:'#5BF5B8', ev3:'#1AD88A', petrol:'#FF8A3D', petrol2:'#FFA866', petrol3:'#E87020', neutral:'#7C9BFF', warp:'#FFD23F' };
+const EV_COLORS = [C.ev, C.ev2, C.ev3];
+const PETROL_COLORS = [C.petrol, C.petrol2, C.petrol3];
+
+let evVehicles = [];
+let petrolVehicles = [];
+let vehicleIdCounter = 0;
+
+function createVehicle(type) {
+  const id = vehicleIdCounter++;
+  const color = type==='ev' ? EV_COLORS[evVehicles.length % EV_COLORS.length] : PETROL_COLORS[petrolVehicles.length % PETROL_COLORS.length];
+  const label = type==='ev' ? `EV ${evVehicles.length+1}` : `Petrol ${petrolVehicles.length+1}`;
+  return {
+    id, type, label, color, name: label,
+    price: type==='ev' ? 350000 : 300000,
+    resale: type==='ev' ? 120000 : 180000,
+    includeResale: true,
+    tax: type==='ev' ? 2000 : 5000,
+    insurance: type==='ev' ? 8000 : 8000,
+    elecPerKm: type==='ev' ? 0.35 : 0,
+    fuelPerKm: type==='ev' ? 0 : 6.50,
+    maintPerKm: type==='ev' ? 0.18 : 1.20,
+    battDegPer10k: type==='ev' ? 0.05 : 0,
+    engineDegPer15k: type==='ev' ? 0 : 0.05,
+    maintDegPer10k: 0.02,
+  };
+}
+
+evVehicles.push(createVehicle('ev'));
+petrolVehicles.push(createVehicle('petrol'));
+
+function getAllVehicles() { return [...evVehicles, ...petrolVehicles]; }
+function getVehicleById(id) { return getAllVehicles().find(v=>v.id===id); }
+
+const state = { evDailyKm:18, evYears:5, petrolDailyKm:18, petrolYears:5, timeWarp:30 };
+let serviceMode = 'perKm';
+
+const byId = id => document.getElementById(id);
+function fmtNum(v, step) { return step<1 ? Number(v).toFixed(2) : String(Math.round(v)); }
+function clamp(v,lo,hi) { return Math.max(lo, Math.min(hi, v)); }
+function fmtINR(n, dec) { const s = n<0?'-':''; return s+'रू'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fmtINRShort(n) { const s=n<0?'-':''; const a=Math.abs(n); if(a>=1e7) return s+'रू'+(a/1e7).toFixed(2)+'Cr'; if(a>=1e5) return s+'रू'+(a/1e5).toFixed(2)+'L'; if(a>=1e3) return s+'रू'+(a/1e3).toFixed(1)+'K'; return s+'रू'+Math.round(a); }
+
+function vehicleDailyKm(v) { return v.type==='ev' ? state.evDailyKm : state.petrolDailyKm; }
+function vehicleYears(v) { return v.type==='ev' ? state.evYears : state.petrolYears; }
+function vehicleTotalDays(v) { return vehicleYears(v) * 365; }
+
+function derived() {
+  const maxYears = Math.max(state.evYears, state.petrolYears);
+  const maxTotalDays = maxYears * 365;
+  return { maxTotalDays };
+}
+
+function avgDegMultiplier(day, perKm, perUnit, dailyKm) {
+  if (perUnit <= 0 || day <= 0) return 1;
+  const dist = dailyKm * day;
+  return 1 + perKm * dist / (2 * perUnit);
+}
+
+function costAt(vehicle, day) {
+  const d = derived();
+  const totalDays = vehicleTotalDays(vehicle);
+  const dd = clamp(day, 0, totalDays);
+  const dailyKm = vehicleDailyKm(vehicle);
+  const distance = dailyKm * dd;
+
+  let runningBase = vehicle.type==='ev' ? vehicle.elecPerKm : vehicle.fuelPerKm;
+  let runningDegUnit = vehicle.type==='ev' ? 10000 : 15000;
+  let runningDegRate = vehicle.type==='ev' ? vehicle.battDegPer10k : vehicle.engineDegPer15k;
+  const avgRunFactor = avgDegMultiplier(dd, runningDegRate, runningDegUnit, dailyKm);
+  const runningCost = distance * runningBase * avgRunFactor;
+
+  const maintDegUnit = 10000;
+  const avgMaintFactor = avgDegMultiplier(dd, vehicle.maintDegPer10k, maintDegUnit, dailyKm);
+  const maintCost = distance * vehicle.maintPerKm * avgMaintFactor;
+
+  const fixedAnnual = vehicle.tax + vehicle.insurance;
+  const fixedCost = (dd/365) * fixedAnnual;
+
+  let cost = vehicle.price + runningCost + maintCost + fixedCost;
+  if (vehicle.includeResale && day >= totalDays - 1e-9) cost -= vehicle.resale;
+  return cost;
+}
+
+function estimateBreakevenDay(ev, pet) {
+  if (!ev || !pet) return null;
+  const maxDays = Math.max(vehicleTotalDays(ev), vehicleTotalDays(pet));
+  const evTotalDays = vehicleTotalDays(ev), petTotalDays = vehicleTotalDays(pet);
+  const evDaily = vehicleDailyKm(ev), petDaily = vehicleDailyKm(pet);
+  const evVarBase = ev.type==='ev' ? ev.elecPerKm : ev.fuelPerKm;
+  const petVarBase = pet.type==='ev' ? pet.elecPerKm : pet.fuelPerKm;
+  const evSlope = evDaily * (evVarBase + ev.maintPerKm) + (ev.tax+ev.insurance)/365;
+  const petSlope = petDaily * (petVarBase + pet.maintPerKm) + (pet.tax+pet.insurance)/365;
+  const A = ev.price - pet.price;
+  const B = evSlope - petSlope;
+  if (A <= 1e-9) return 0;
+  if (B >= -1e-9) return null;
+  const t = -A/B;
+  if (t > maxDays) return null;
+  return t;
+}
+
+// --- PANELS ---
+function vehicleRowHTML(vehicle, fieldKey, label, unit, min, max, step, accent, isName=false) {
+  const val = vehicle[fieldKey];
+  const uid = `v${vehicle.id}-${fieldKey}`;
+  if (isName) {
+    return `<div class="mb-2 flex items-center gap-1">
+      <span class="text-[9px] text-mute w-16 shrink-0">Name:</span>
+      <input id="${uid}-text" type="text" value="${val}" class="flex-1 bg-panel2 border border-line rounded-md px-2 py-1 text-[10px] lcd text-ink focus:outline-none focus:ring-1 focus:ring-white/30" maxlength="16">
+      <button class="remove-btn text-lg leading-none px-1" data-vehicle-id="${vehicle.id}" title="Remove vehicle">×</button>
+    </div>`;
+  }
+  return `<div class="mb-3 last:mb-0">
+    <div class="flex items-center justify-between mb-1">
+      <label for="${uid}-num" class="text-[9.5px] font-medium text-mute uppercase tracking-wide flex items-center gap-1">
+        <span class="inline-block w-1.5 h-1.5 rounded-full shrink-0" style="background:${accent}"></span>${vehicle.label} · ${label}
+      </label>
+      <span class="text-[9px] text-dim font-mono shrink-0 ml-1">${unit}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <input id="${uid}-range" type="range" min="${min}" max="${max}" step="${step}" value="${val}" style="--accent:${accent}" class="flex-1">
+      <input id="${uid}-num" type="number" min="${min}" max="${max}" step="${step}" value="${fmtNum(val,step)}" class="w-[72px] shrink-0 bg-panel2 border border-line rounded-md px-1.5 py-1 text-[10px] lcd text-ink text-right focus:outline-none focus:ring-1 focus:ring-white/30">
+    </div>
+  </div>`;
+}
+
+function cardHTML(title, icon, rows, extra='') {
+  return `<div class="rounded-xl border border-line bg-panel2/50 p-3.5 mb-3">
+    <h4 class="font-display text-[11.5px] font-bold text-ink/90 mb-2.5 tracking-wider uppercase flex items-center gap-1.5"><span>${icon}</span>${title}</h4>
+    ${rows}
+    ${extra}
+  </div>`;
+}
+
+function rebuildAllPanels() {
+  // Purchase & Names
+  let purchaseHTML = '';
+  getAllVehicles().forEach(v => {
+    purchaseHTML += vehicleRowHTML(v, 'name', 'Scooter Name', '', 0,0,0, v.color, true);
+    purchaseHTML += vehicleRowHTML(v, 'price', 'Purchase Price', 'रू', 50000,1500000,1000, v.color);
+  });
+  const addButtonsHTML = `
+    <div class="mt-3 pt-2 border-t border-line/60 flex items-center gap-2">
+      <span class="text-[9px] text-mute">Add vehicle:</span>
+      <button id="btnAddEVinCard" class="font-mono text-[10px] px-2.5 py-1 rounded-full border border-ev/50 text-ev hover:bg-ev/10 transition">+ EV</button>
+      <button id="btnAddPetrolinCard" class="font-mono text-[10px] px-2.5 py-1 rounded-full border border-petrol/50 text-petrol hover:bg-petrol/10 transition">+ Petrol</button>
+    </div>`;
+  byId('sec-purchase').innerHTML = cardHTML('Purchase & Names', '🏷️', purchaseHTML, addButtonsHTML);
+
+  // Expected Resale Value (SEPARATED)
+  let resaleHTML = '';
+  getAllVehicles().forEach(v => {
+    resaleHTML += vehicleRowHTML(v, 'resale', 'Expected Resale', 'रू', 0,800000,1000, v.color);
+    resaleHTML += `<div class="mb-2 flex items-center gap-2"><input id="v${v.id}-includeResale" type="checkbox" ${v.includeResale?'checked':''} class="accent-gold"><label for="v${v.id}-includeResale" class="text-[9px] text-mute">Include resale in net cost</label></div>`;
+  });
+  byId('sec-resale').innerHTML = cardHTML('Expected Resale Value', '↩️', resaleHTML);
+
+  // Usage profile
+  let usageHTML = '';
+  usageHTML += `<div class="mb-3"><span class="text-[10px] font-mono text-ev uppercase">⚡ EV Usage</span>`;
+  usageHTML += `<div class="flex items-center gap-2 mt-1"><label class="text-[9px] text-mute w-20">Daily km</label><input id="evDailyKm-range" type="range" min="1" max="120" step="1" value="${state.evDailyKm}" style="--accent:${C.ev}" class="flex-1"><input id="evDailyKm-num" type="number" value="${state.evDailyKm}" class="w-[60px] bg-panel2 border border-line rounded-md px-1 py-1 text-[10px] lcd text-ink text-right"></div>`;
+  usageHTML += `<div class="flex items-center gap-2 mt-1"><label class="text-[9px] text-mute w-20">Years</label><input id="evYears-range" type="range" min="1" max="12" step="1" value="${state.evYears}" style="--accent:${C.ev}" class="flex-1"><input id="evYears-num" type="number" value="${state.evYears}" class="w-[60px] bg-panel2 border border-line rounded-md px-1 py-1 text-[10px] lcd text-ink text-right"></div></div>`;
+  usageHTML += `<div class="mb-3"><span class="text-[10px] font-mono text-petrol uppercase">🛵 Petrol Usage</span>`;
+  usageHTML += `<div class="flex items-center gap-2 mt-1"><label class="text-[9px] text-mute w-20">Daily km</label><input id="petrolDailyKm-range" type="range" min="1" max="120" step="1" value="${state.petrolDailyKm}" style="--accent:${C.petrol}" class="flex-1"><input id="petrolDailyKm-num" type="number" value="${state.petrolDailyKm}" class="w-[60px] bg-panel2 border border-line rounded-md px-1 py-1 text-[10px] lcd text-ink text-right"></div>`;
+  usageHTML += `<div class="flex items-center gap-2 mt-1"><label class="text-[9px] text-mute w-20">Years</label><input id="petrolYears-range" type="range" min="1" max="12" step="1" value="${state.petrolYears}" style="--accent:${C.petrol}" class="flex-1"><input id="petrolYears-num" type="number" value="${state.petrolYears}" class="w-[60px] bg-panel2 border border-line rounded-md px-1 py-1 text-[10px] lcd text-ink text-right"></div></div>`;
+  byId('sec-usage').innerHTML = cardHTML('Usage Profile', '⏱️', usageHTML);
+
+  // Fixed costs
+  let taxHTML = '', insHTML = '';
+  getAllVehicles().forEach(v => {
+    taxHTML += vehicleRowHTML(v, 'tax', 'Annual Tax / Bluebook', 'रू/yr', 0,30000,100, v.color);
+    insHTML += vehicleRowHTML(v, 'insurance', 'Annual Insurance', 'रू/yr', 0,50000,100, v.color);
+  });
+  byId('sec-fixed').innerHTML = cardHTML('Annual Tax / Bluebook', '🧾', taxHTML) + cardHTML('Insurance', '🛡️', insHTML);
+
+  // Running
+  let runningHTML = '';
+  getAllVehicles().forEach(v => {
+    if (v.type==='ev') runningHTML += vehicleRowHTML(v, 'elecPerKm', 'Electricity', 'रू/km', 0,15,0.01, v.color);
+    else runningHTML += vehicleRowHTML(v, 'fuelPerKm', 'Fuel Cost', 'रू/km', 0,25,0.05, v.color);
+  });
+  byId('sec-running').innerHTML = cardHTML('Running Cost', '⚡⛽', runningHTML);
+
+  // Maintenance
+  let maintHTML = `<div class="flex items-center gap-2 mb-2"><span class="text-[9px] text-dim font-mono">${serviceMode==='perKm'?'per KM':'per Annum'}</span><button id="toggleServiceMode" class="toggle-btn active">Switch to ${serviceMode==='perKm'?'per Annum':'per KM'}</button></div>`;
+  getAllVehicles().forEach(v => {
+    const displayVal = serviceMode==='perKm' ? v.maintPerKm : v.maintPerKm * vehicleDailyKm(v) * 365;
+    const uid = `v${v.id}-maintPerKm`;
+    maintHTML += `<div class="mb-3"><div class="flex justify-between"><span class="text-[9.5px] text-mute">${v.label} Service</span><span class="text-[9px] text-dim">${serviceMode==='perKm'?'रू/km':'रू/yr'}</span></div><div class="flex gap-2 mt-1"><input id="${uid}-range" type="range" min="0" max="${serviceMode==='perKm'?8:200000}" step="${serviceMode==='perKm'?0.01:100}" value="${displayVal}" style="--accent:${v.color}" class="flex-1"><input id="${uid}-num" type="number" value="${fmtNum(displayVal,serviceMode==='perKm'?0.01:100)}" class="w-[72px] bg-panel2 border border-line rounded-md px-1.5 py-1 text-[10px] lcd text-ink text-right"></div></div>`;
+  });
+  byId('sec-maint').innerHTML = cardHTML('Maintenance', '🔧', maintHTML);
+
+  bindAllInputs();
+  document.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const vehicleId = parseInt(btn.dataset.vehicleId);
+      removeVehicle(vehicleId);
+    });
+  });
+  byId('btnAddEVinCard').addEventListener('click', () => { if(evVehicles.length>=3) return; evVehicles.push(createVehicle('ev')); rebuildAllPanels(); });
+  byId('btnAddPetrolinCard').addEventListener('click', () => { if(petrolVehicles.length>=3) return; petrolVehicles.push(createVehicle('petrol')); rebuildAllPanels(); });
+}
+
+function removeVehicle(id) {
+  const all = getAllVehicles();
+  if(all.length<=2) { alert('Need at least 2 vehicles to compare.'); return; }
+  const vehicle = all.find(v=>v.id===id);
+  if(!vehicle) return;
+  if(vehicle.type==='ev') evVehicles = evVehicles.filter(v=>v.id!==id);
+  else petrolVehicles = petrolVehicles.filter(v=>v.id!==id);
+  rebuildAllPanels();
+}
+
+function bindAllInputs() {
+  bindField('evDailyKm','evDailyKm',1,120,1,state);
+  bindField('evYears','evYears',1,12,1,state);
+  bindField('petrolDailyKm','petrolDailyKm',1,120,1,state);
+  bindField('petrolYears','petrolYears',1,12,1,state);
+
+  getAllVehicles().forEach(v => {
+    bindTextField(v);
+    bindField(`v${v.id}-price`,'price',50000,1500000,1000,v);
+    bindField(`v${v.id}-resale`,'resale',0,800000,1000,v);
+    bindField(`v${v.id}-tax`,'tax',0,30000,100,v);
+    bindField(`v${v.id}-insurance`,'insurance',0,50000,100,v);
+    if(v.type==='ev') bindField(`v${v.id}-elecPerKm`,'elecPerKm',0,15,0.01,v);
+    else bindField(`v${v.id}-fuelPerKm`,'fuelPerKm',0,25,0.05,v);
+    bindMaintField(v);
+    const cb = byId(`v${v.id}-includeResale`);
+    if(cb) cb.addEventListener('change', () => { v.includeResale = cb.checked; });
+  });
+  const toggleBtn = byId('toggleServiceMode');
+  if(toggleBtn) toggleBtn.addEventListener('click', ()=>{ serviceMode = serviceMode==='perKm'?'perAnnum':'perKm'; rebuildAllPanels(); });
+}
+
+function bindTextField(v) {
+  const input = byId(`v${v.id}-name-text`);
+  if(!input) return;
+  input.addEventListener('input', ()=>{ v.name = input.value || v.label; });
+}
+
+function bindField(uid, prop, min, max, step, target) {
+  const range = byId(uid+'-range'), num = byId(uid+'-num');
+  if(!range||!num) return;
+  const syncR = ()=>{ const val = clamp(parseFloat(range.value),min,max); target[prop]=val; num.value=fmtNum(val,step); };
+  const syncN = ()=>{ let v=parseFloat(num.value); if(isNaN(v)) v=target[prop]; v=clamp(v,min,max); target[prop]=v; range.value=v; num.value=fmtNum(v,step); };
+  range.addEventListener('input',syncR); num.addEventListener('input',syncN); num.addEventListener('change',syncN);
+}
+
+function bindMaintField(v) {
+  const uid = `v${v.id}-maintPerKm`, range=byId(uid+'-range'), num=byId(uid+'-num');
+  if(!range||!num) return;
+  const sync = (fromRange)=>{
+    const raw = parseFloat(fromRange?range.value:num.value);
+    if(serviceMode==='perKm') v.maintPerKm = clamp(raw,0,8);
+    else v.maintPerKm = clamp(raw/(vehicleDailyKm(v)*365),0,8);
+    const display = serviceMode==='perKm'? v.maintPerKm : v.maintPerKm*vehicleDailyKm(v)*365;
+    range.value = display; num.value = fmtNum(display, serviceMode==='perKm'?0.01:100);
+  };
+  range.addEventListener('input',()=>sync(true)); num.addEventListener('input',()=>sync(false)); num.addEventListener('change',()=>sync(false));
+}
+
+// Speed chips
+const SPEED_PRESETS = [1,7,30,90,180,365];
+function rebuildSpeedChips() {
+  byId('speedChips').innerHTML = SPEED_PRESETS.map(v=>`<button class="chip" data-speed="${v}">${v}x</button>`).join('');
+  document.querySelectorAll('#speedChips .chip').forEach(c=>c.addEventListener('click',()=>{ state.timeWarp=Number(c.dataset.speed); syncSpeedChips(); }));
+  syncSpeedChips();
+}
+function syncSpeedChips() {
+  document.querySelectorAll('#speedChips .chip').forEach(c=>c.classList.toggle('active', Number(c.dataset.speed)===Math.round(state.timeWarp)));
+  byId('speedReadout').textContent = fmtNum(state.timeWarp,1)+'x';
+}
+
+byId('btnRestoreDefaults').addEventListener('click',()=>{
+  state.evDailyKm=18; state.evYears=5; state.petrolDailyKm=18; state.petrolYears=5; state.timeWarp=30;
+  evVehicles=[createVehicle('ev')]; petrolVehicles=[createVehicle('petrol')];
+  serviceMode='perKm'; rebuildAllPanels(); rebuildSpeedChips(); doReset();
+});
+
+// Stat cards
+function statCardHTML(id,label,color){ return `<div class="rounded-lg border border-line bg-panel2/60 px-3 py-2"><div class="text-[8.5px] uppercase text-mute mb-0.5">${label}</div><div id="${id}" class="font-mono text-[11px] md:text-sm font-bold" style="color:${color}">—</div></div>`; }
+function rebuildStatCards() {
+  byId('quickStats').innerHTML = statCardHTML('statEvTco','EV Net TCO',C.ev)+statCardHTML('statPetrolTco','Petrol Net TCO',C.petrol)+statCardHTML('statSavings','Savings (EV vs Petrol)',C.warp)+statCardHTML('statBreakeven','Breakeven Point',C.neutral);
+  byId('liveFeed').innerHTML = statCardHTML('odoValue','Distance','#E7EDF5')+statCardHTML('dayYearReadout','Elapsed','#E7EDF5')+statCardHTML('tickerEv','EV Spend','#33F2A0')+statCardHTML('tickerPetrol','Petrol Spend','#FF8A3D');
+}
+function updateComparisonStats() {
+  const ev=evVehicles[0], pet=petrolVehicles[0];
+  if(!ev||!pet) return;
+  const evFinal=costAt(ev, vehicleTotalDays(ev)), petFinal=costAt(pet, vehicleTotalDays(pet));
+  const savings=petFinal-evFinal;
+  byId('statEvTco').textContent = fmtINR(evFinal,0); byId('statPetrolTco').textContent = fmtINR(petFinal,0);
+  const savEl=byId('statSavings'); savEl.textContent=(savings>=0?'+':'')+fmtINR(savings,0); savEl.style.color=savings>=0?C.ev:C.petrol;
+  const be=estimateBreakevenDay(ev,pet); const beEl=byId('statBreakeven');
+  if(be===null){ beEl.textContent='Not reached'; beEl.style.color=C.petrol; }
+  else if(be<=0.01){ beEl.textContent='Day 1'; beEl.style.color=C.ev; }
+  else { beEl.textContent=`Day ${Math.round(be)} (Yr ${(be/365).toFixed(1)})`; beEl.style.color=C.neutral; }
+  const distEV = vehicleDailyKm(ev) * Math.min(simDay, vehicleTotalDays(ev));
+  const distPetrol = vehicleDailyKm(pet) * Math.min(simDay, vehicleTotalDays(pet));
+  byId('odoValue').textContent = `EV: ${Math.round(distEV).toLocaleString('en-IN')} km · Petrol: ${Math.round(distPetrol).toLocaleString('en-IN')} km`;
+  byId('dayYearReadout').textContent = `Day ${Math.floor(simDay)} / Max ${(derived().maxTotalDays/365).toFixed(1)} yr`;
+  byId('tickerEv').textContent = ev ? fmtINR(costAt(ev,simDay),2) : '—';
+  byId('tickerPetrol').textContent = pet ? fmtINR(costAt(pet,simDay),2) : '—';
+  updateBreakdownTable();
+}
+
+function updateBreakdownTable() {
+  const table = byId('breakdownTable');
+  const maxYears = Math.ceil(derived().maxTotalDays / 365);
+  const vehicles = getAllVehicles();
+  let headerRow = '<tr class="border-b border-line"><th>Year</th>';
+  vehicles.forEach(v => { headerRow += `<th style="color:${v.color}">${v.name||v.label}<br><span class="text-[8px] text-mute">(cumulative)</span></th>`; });
+  headerRow += '</tr>';
+  let rows = headerRow;
+  for (let y = 1; y <= maxYears; y++) {
+    const day = y * 365;
+    rows += '<tr class="border-b border-line/30">';
+    rows += `<td class="text-mute">Y${y}</td>`;
+    vehicles.forEach(v => {
+      const cost = costAt(v, Math.min(day, vehicleTotalDays(v)));
+      rows += `<td style="color:${v.color}">${fmtINR(cost,0)}</td>`;
+    });
+    rows += '</tr>';
+  }
+  table.innerHTML = rows;
+}
+
+function rebuildChartLegend() {
+  let html=''; getAllVehicles().forEach(v=>html+=`<span class="flex items-center gap-1"><span class="w-2.5 h-0.5 rounded" style="background:${v.color}"></span>${v.name||v.label}</span>`);
+  html+=`<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${C.warp}"></span>Breakeven</span>`;
+  byId('chartLegend').innerHTML=html;
+}
+
+// Simulation state
+const BASE_DAYS_PER_SEC=1; let simDay=0, running=false, completed=false, breakevenTriggered=false, lastTS=null, audioCtx=null;
+const arenaWrapEl=byId('arenaWrap'), flashOverlayEl=byId('flashOverlay'), bannerEl=byId('breakevenBanner'), achievedBadgeEl=byId('achievedBadge'), completeBadgeEl=byId('completeBadge');
+
+function ensureAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
+function playBeep(){ try{ ensureAudio(); const t0=audioCtx.currentTime, o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(440,t0); o.frequency.exponentialRampToValueAtTime(1108,t0+0.18); g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.22,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.5); o.connect(g).connect(audioCtx.destination); o.start(t0); o.stop(t0+0.55); }catch(e){} }
+function doReset(){ running=false; completed=false; simDay=0; breakevenTriggered=false; lastTS=null; sparks.length=0; smoke.length=0; cashEV.length=0; cashPetrol.length=0; celebParticles.length=0; achievedBadgeEl.classList.add('hidden'); completeBadgeEl.classList.add('hidden'); updateButtons(); }
+function updateButtons(){ let label; if(running) label='⏸ PAUSE'; else if(completed) label='↻ RESTART'; else if(simDay>0) label='▶ RESUME'; else label='▶ START'; byId('btnPlayPause').textContent=label; }
+byId('btnPlayPause').addEventListener('click',()=>{ if(completed){ doReset(); running=true; lastTS=null; ensureAudio(); } else { running=!running; if(running){ lastTS=null; ensureAudio(); } } updateButtons(); });
+byId('btnReset').addEventListener('click',doReset);
+function onComplete(){ completed=true; running=false; const ev=evVehicles[0], pet=petrolVehicles[0]; const savings = pet ? (costAt(pet, vehicleTotalDays(pet)) - costAt(ev, vehicleTotalDays(ev))) :0; completeBadgeEl.textContent=`🏁 Simulation complete — Net savings with ${ev.name||'EV'} vs ${pet.name||'Petrol'}: ${fmtINR(savings,0)}`; completeBadgeEl.classList.remove('hidden'); updateButtons(); }
+function triggerBreakevenEvent(day){ const yrs=(day/365).toFixed(2); byId('breakevenDetail').textContent=`Day ${Math.round(day)} · Year ${yrs}`; [flashOverlayEl,bannerEl].forEach(el=>{el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');}); arenaWrapEl.classList.remove('shake'); void arenaWrapEl.offsetWidth; arenaWrapEl.classList.add('shake'); achievedBadgeEl.textContent=`✓ EV broke even on Day ${Math.round(day)}`; achievedBadgeEl.classList.remove('hidden'); spawnCelebration(); playBeep(); }
+
+// Canvas & particles
+const trackCanvas=byId('trackCanvas'), trackCtx=trackCanvas.getContext('2d'), chartCanvas=byId('chartCanvas'), chartCtx=chartCanvas.getContext('2d');
+let trackW=0,trackH=0,chartW=0,chartH=0, stars=[];
+const sparks=[], smoke=[], cashEV=[], cashPetrol=[], celebParticles=[];
+let sparkTimer=0,smokeTimer=0,cashTimerEV=0,cashTimerPetrol=0, scrollOffset=0,bobPhase=0,wheelAngle=0,starTime=0;
+
+function resizeAll(){
+  const dpr=window.devicePixelRatio||1;
+  trackCanvas.width=trackCanvas.clientWidth*dpr; trackCanvas.height=trackCanvas.clientHeight*dpr; trackCtx.setTransform(dpr,0,0,dpr,0,0); trackW=trackCanvas.clientWidth; trackH=trackCanvas.clientHeight;
+  chartCanvas.width=chartCanvas.clientWidth*dpr; chartCanvas.height=chartCanvas.clientHeight*dpr; chartCtx.setTransform(dpr,0,0,dpr,0,0); chartW=chartCanvas.clientWidth; chartH=chartCanvas.clientHeight;
+  stars=[]; for(let i=0;i<Math.max(20,Math.round(trackW/18));i++) stars.push({x:Math.random()*trackW, y:Math.random()*trackH*0.45, r:Math.random()*1.3+0.3, seed:Math.random()*10, speed:0.5+Math.random()});
+}
+window.addEventListener('resize',()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(resizeAll,120); }); let resizeTimer=null;
+
+function spawnSpark(x,y){ sparks.push({x,y,vx:-55-Math.random()*45,vy:(Math.random()-0.5)*35,life:0,maxLife:0.45+Math.random()*0.25,size:1.6+Math.random()*2}); if(sparks.length>70) sparks.shift(); }
+function spawnSmoke(x,y){ smoke.push({x,y,vx:-30-Math.random()*18,vy:-8-Math.random()*10,life:0,maxLife:1+Math.random()*0.6,size:3.5+Math.random()*3,grow:16+Math.random()*10}); if(smoke.length>60) smoke.shift(); }
+function spawnCash(arr,x,y){ arr.push({x,y,vx:(Math.random()-0.5)*24,vy:-36-Math.random()*22,rot:(Math.random()-0.5)*1.2,vr:(Math.random()-0.5)*4.5,life:0,maxLife:1.3+Math.random()*0.5}); if(arr.length>45) arr.shift(); }
+function spawnCelebration(){ const x=trackW*0.5,y=trackH*0.32; for(let i=0;i<28;i++){ const ang=Math.random()*Math.PI*2,sp=60+Math.random()*140; celebParticles.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-40,life:0,maxLife:0.8+Math.random()*0.6,size:2+Math.random()*3,hue:Math.random()<0.5?C.ev:C.warp}); } }
+function updateParticles(dt){
+  const all=[[sparks,'spark'],[smoke,'smoke'],[cashEV,'cash'],[cashPetrol,'cash'],[celebParticles,'celeb']];
+  for(const [arr,kind] of all){ for(let i=arr.length-1;i>=0;i--){ const p=arr[i]; p.life+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; if(kind==='cash'||kind==='celeb') p.vy+=110*dt; if(p.rot!==undefined) p.rot+=p.vr*dt; if(p.life>=p.maxLife) arr.splice(i,1); } }
+}
+function drawSparks(ctx){ ctx.save(); for(const p of sparks){ const a=1-p.life/p.maxLife; ctx.globalAlpha=Math.max(0,a); ctx.fillStyle=C.ev; ctx.shadowColor=C.ev; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*a+0.6,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+function drawSmoke(ctx){ ctx.save(); for(const p of smoke){ const t=p.life/p.maxLife; const a=(1-t)*0.45; const r=p.size+p.grow*t; const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r); grad.addColorStop(0,`rgba(154,163,174,${a})`); grad.addColorStop(1,'rgba(154,163,174,0)'); ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+function drawCash(ctx,arr){ ctx.save(); ctx.font='bold 11px "Share Tech Mono"'; ctx.textAlign='center'; ctx.textBaseline='middle'; for(const p of arr){ const a=Math.max(0,1-p.life/p.maxLife); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=a; ctx.fillStyle='#FFD23F'; ctx.strokeStyle='rgba(10,14,20,0.5)'; ctx.lineWidth=1; roundRect(ctx,-9,-6,18,12,2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#0A0E14'; ctx.fillText('रू',0,0.5); ctx.restore(); } ctx.restore(); }
+function drawCelebration(ctx){ ctx.save(); for(const p of celebParticles){ const a=Math.max(0,1-p.life/p.maxLife); ctx.globalAlpha=a; ctx.fillStyle=p.hue; ctx.shadowColor=p.hue; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function drawWheel(ctx,x,y,radius,angle,color){ ctx.save(); ctx.translate(x,y); ctx.fillStyle='#0D1219'; ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(0,0,radius,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.rotate(angle); ctx.strokeStyle='rgba(231,237,245,0.55)'; ctx.lineWidth=1; for(let i=0;i<5;i++){ const a=(i/5)*Math.PI*2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*radius*0.82,Math.sin(a)*radius*0.82); ctx.stroke(); } ctx.fillStyle=color; ctx.beginPath(); ctx.arc(0,0,radius*0.28,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function drawScooter(ctx,x,groundY,scale,type,color,angle,bob){
+  const wheelR=11*scale; ctx.save(); ctx.translate(x,groundY+bob); ctx.scale(scale,scale);
+  drawWheel(ctx,-22,-wheelR/scale,wheelR/scale,angle,color); drawWheel(ctx,20,-wheelR/scale,wheelR/scale,angle,color);
+  ctx.beginPath(); ctx.moveTo(-32,-wheelR/scale); ctx.lineTo(-14,-wheelR/scale); ctx.quadraticCurveTo(-2,-wheelR/scale-2,6,-wheelR/scale-14); ctx.lineTo(10,-wheelR/scale-30); ctx.lineTo(16,-wheelR/scale-30); ctx.quadraticCurveTo(20,-wheelR/scale-20,26,-wheelR/scale-8); ctx.quadraticCurveTo(34,-wheelR/scale-4,34,-wheelR/scale+2); ctx.lineTo(30,-wheelR/scale+2); ctx.quadraticCurveTo(20,-wheelR/scale,6,-wheelR/scale); ctx.lineTo(-32,-wheelR/scale); ctx.closePath();
+  ctx.fillStyle='#161D27'; ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.shadowColor=color; ctx.shadowBlur=type==='ev'?14:6; ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='#0D1219'; roundRect(ctx,-14,-wheelR/scale-4,24,5,2); ctx.fill();
+  ctx.fillStyle='#0D1219'; ctx.strokeStyle=color; ctx.lineWidth=1.2; ctx.beginPath(); ctx.ellipse(-2,-wheelR/scale-22,7,9,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(-2,-wheelR/scale-36,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=10; ctx.beginPath(); ctx.arc(34,-wheelR/scale-1,2.6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  if(type==='ev'){ ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(-6,-wheelR/scale-6); ctx.lineTo(-14,-wheelR/scale-16); ctx.lineTo(-9,-wheelR/scale-16); ctx.lineTo(-15,-wheelR/scale-24); ctx.lineTo(-4,-wheelR/scale-14); ctx.lineTo(-9,-wheelR/scale-14); ctx.closePath(); ctx.fill(); }
+  else { ctx.fillStyle='#0D1219'; ctx.strokeStyle=color; ctx.lineWidth=1.2; roundRect(ctx,-38,-wheelR/scale+1,9,4,2); ctx.fill(); ctx.stroke(); }
+  ctx.restore();
+}
+function drawNameLabel(ctx, x, groundY, scale, color, bob, name) {
+  const fontSize = Math.round(10 * scale);
+  ctx.save();
+  ctx.font = `bold ${fontSize}px "Share Tech Mono", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  const textY = groundY + bob - 45 * scale;
+  const metrics = ctx.measureText(name);
+  const padding = 4 * scale;
+  const bgWidth = metrics.width + padding * 2;
+  const bgHeight = fontSize + padding * 2;
+  ctx.fillStyle = 'rgba(10,14,20,0.8)';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.2;
+  roundRect(ctx, x - bgWidth/2, textY - bgHeight, bgWidth, bgHeight, 4);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.fillText(name, x, textY - padding);
+  ctx.restore();
+}
+
+function trackGroundYs(){ const roadTop=trackH*0.78; return { ev:roadTop+(trackH-roadTop)*0.25, petrol:roadTop+(trackH-roadTop)*0.80, roadTop }; }
+
+function renderTrack(dt){
+  const ctx=trackCtx, d=derived(); const allV=getAllVehicles();
+  scrollOffset+= (running?50+state.timeWarp*0.55:7)*dt; bobPhase+=dt*(running?4.2:1.4); wheelAngle+=dt*(running?Math.min(20+state.timeWarp*0.32,26):2.4);
+  ctx.clearRect(0,0,trackW,trackH);
+  const sky=ctx.createLinearGradient(0,0,0,trackH); sky.addColorStop(0,'#0B0F17'); sky.addColorStop(1,'#121A24'); ctx.fillStyle=sky; ctx.fillRect(0,0,trackW,trackH);
+  starTime+=dt; for(const s of stars){ const tw=0.45+0.35*Math.sin(starTime*s.speed+s.seed); ctx.fillStyle=`rgba(200,215,235,${0.25+tw*0.5})`; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }
+  const skylineY=trackH*0.62; ctx.fillStyle='rgba(42,52,71,0.55)'; const bWidth=46,gap=18,period=bWidth+gap,off=(scrollOffset*0.25)%period; for(let x=-period-off;x<trackW+period;x+=period){ const bh=28+((Math.sin(x*0.013)+1)/2)*46; ctx.fillRect(x,skylineY-bh,bWidth,bh); }
+  const roadTop=trackH*0.78; ctx.fillStyle='#1C242F'; ctx.fillRect(0,roadTop,trackW,trackH-roadTop); ctx.strokeStyle='rgba(231,237,245,0.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,roadTop+1); ctx.lineTo(trackW,roadTop+1); ctx.stroke();
+  const laneY=roadTop+(trackH-roadTop)*0.5; ctx.strokeStyle='rgba(255,210,63,0.35)'; ctx.lineWidth=2; ctx.setLineDash([16,14]); ctx.lineDashOffset=-(scrollOffset%30); ctx.beginPath(); ctx.moveTo(0,laneY); ctx.lineTo(trackW,laneY); ctx.stroke(); ctx.setLineDash([]);
+
+  const gy=trackGroundYs();
+  const trackLeft=trackW*0.16, trackRight=trackW*0.86, centerX=(trackLeft+trackRight)/2, maxLead=(trackRight-trackLeft)/2-30;
+  const ev = evVehicles[0], pet = petrolVehicles[0];
+  const costEv = ev ? costAt(ev,simDay) : 0, costPetrol = pet ? costAt(pet,simDay) : 0;
+  const refSpan = Math.max(Math.abs(costEv),Math.abs(costPetrol),1)*0.55;
+  const delta = clamp((costPetrol-costEv)/refSpan, -1,1);
+  const xEv = centerX + delta*maxLead, xPetrol = centerX - delta*maxLead;
+
+  if(running && ev && pet){
+    sparkTimer-=dt; if(sparkTimer<=0){ spawnSpark(xEv-34,gy.ev-6); sparkTimer=0.045+Math.random()*0.03; }
+    smokeTimer-=dt; if(smokeTimer<=0){ spawnSmoke(xPetrol-40,gy.petrol-4); smokeTimer=0.09+Math.random()*0.06; }
+    cashTimerEV-=dt; if(cashTimerEV<=0){ spawnCash(cashEV,xEv+4,gy.ev-70); cashTimerEV=clamp(2.4-(vehicleDailyKm(ev)*(ev.elecPerKm+ev.maintPerKm)+(ev.tax+ev.insurance)/365)/30,0.45,2.4); }
+    cashTimerPetrol-=dt; if(cashTimerPetrol<=0){ spawnCash(cashPetrol,xPetrol+4,gy.petrol-70); cashTimerPetrol=clamp(2.4-(vehicleDailyKm(pet)*(pet.fuelPerKm+pet.maintPerKm)+(pet.tax+pet.insurance)/365)/30,0.18,2.4); }
+  }
+  updateParticles(dt); drawSmoke(ctx); drawSparks(ctx);
+
+  const evLaneY = gy.ev, petrolLaneY = gy.petrol;
+  evVehicles.forEach((v,i)=>{
+    const offset = (i - (evVehicles.length-1)/2) * 35;
+    const xPos = xEv + offset;
+    drawScooter(ctx, xPos, evLaneY, 1.0, 'ev', v.color, wheelAngle, Math.sin(bobPhase+i)*2);
+    drawNameLabel(ctx, xPos, evLaneY, 1.0, v.color, Math.sin(bobPhase+i)*2, v.name || v.label);
+  });
+  petrolVehicles.forEach((v,i)=>{
+    const offset = (i - (petrolVehicles.length-1)/2) * 35;
+    const xPos = xPetrol + offset;
+    drawScooter(ctx, xPos, petrolLaneY, 1.0, 'petrol', v.color, wheelAngle, Math.sin(bobPhase+1.1+i)*2);
+    drawNameLabel(ctx, xPos, petrolLaneY, 1.0, v.color, Math.sin(bobPhase+1.1+i)*2, v.name || v.label);
+  });
+
+  drawCash(ctx,cashEV); drawCash(ctx,cashPetrol); drawCelebration(ctx);
+  ctx.save(); ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.globalAlpha=0.7; ctx.fillText('🏁',trackRight+14,gy.roadTop-6); ctx.restore();
+}
+
+let chartMouseX = null, chartMouseY = null;
+function drawChart(){
+  const ctx=chartCtx, d=derived(), pad={l:58,r:14,t:14,b:28}, plotW=Math.max(10,chartW-pad.l-pad.r), plotH=Math.max(10,chartH-pad.t-pad.b);
+  ctx.clearRect(0,0,chartW,chartH);
+  const allV=getAllVehicles(); let maxPre=1, minFinal=Infinity;
+  allV.forEach(v=>{
+    const pre = v.price + vehicleTotalDays(v)*vehicleDailyKm(v)*(v.type==='ev'?v.elecPerKm:v.fuelPerKm+v.maintPerKm) + vehicleYears(v)*(v.tax+v.insurance);
+    maxPre = Math.max(maxPre, pre, costAt(v,0));
+    minFinal = Math.min(minFinal, costAt(v, vehicleTotalDays(v)));
+  });
+  const yMin=Math.min(0,minFinal-maxPre*0.1), yMax=maxPre*1.12, yRange=yMax-yMin;
+  const mapX=day=>pad.l+(day/d.maxTotalDays)*plotW;
+  const mapY=cost=>pad.t+plotH-clamp((cost-yMin)/yRange,0,1.2)*plotH;
+
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.fillStyle='#52617A'; ctx.font='10px "Share Tech Mono"'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let i=0;i<=5;i++){ const val=yMin+(yRange/5)*i, y=mapY(val); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+plotW,y); ctx.stroke(); ctx.fillText(fmtINRShort(val),pad.l-8,y); }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  const maxYears = d.maxTotalDays/365;
+  for(let yI=0;yI<=Math.ceil(maxYears);yI++){ ctx.fillText('Y'+yI,mapX(yI*365),pad.t+plotH+7); }
+
+  allV.forEach(v=>{
+    const totalDays = vehicleTotalDays(v);
+    const start=costAt(v,0), pre = v.price + totalDays*vehicleDailyKm(v)*(v.type==='ev'?v.elecPerKm:v.fuelPerKm+v.maintPerKm) + vehicleYears(v)*(v.tax+v.insurance);
+    const final=costAt(v,totalDays), now=costAt(v,simDay);
+    ctx.save(); ctx.globalAlpha=0.25; ctx.setLineDash([5,5]); ctx.strokeStyle=v.color; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(mapX(0),mapY(start)); ctx.lineTo(mapX(totalDays),mapY(pre)); ctx.stroke();
+    if (v.includeResale) { ctx.beginPath(); ctx.moveTo(mapX(totalDays),mapY(pre)); ctx.lineTo(mapX(totalDays),mapY(final)); ctx.stroke(); }
+    ctx.restore();
+    ctx.save(); ctx.strokeStyle=v.color; ctx.shadowColor=v.color; ctx.shadowBlur=5; ctx.lineWidth=2.2;
+    ctx.beginPath(); ctx.moveTo(mapX(0),mapY(start)); ctx.lineTo(mapX(Math.min(simDay,totalDays)),mapY(now));
+    if(simDay>=totalDays-1e-6 && v.includeResale) ctx.lineTo(mapX(totalDays),mapY(final));
+    ctx.stroke(); ctx.restore();
+    ctx.fillStyle=v.color; ctx.beginPath(); ctx.arc(mapX(Math.min(simDay,totalDays)),mapY(now),3,0,Math.PI*2); ctx.fill();
+  });
+
+  const be = (evVehicles[0]&&petrolVehicles[0]) ? estimateBreakevenDay(evVehicles[0],petrolVehicles[0]) : null;
+  if(be!==null){ const bx=mapX(be), by=mapY(costAt(evVehicles[0],be)); ctx.save(); ctx.strokeStyle='rgba(255,210,63,0.5)'; ctx.setLineDash([3,5]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(bx,pad.t); ctx.lineTo(bx,pad.t+plotH); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=C.warp; ctx.shadowColor=C.warp; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(bx,by,4.5,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+plotH); ctx.lineTo(pad.l+plotW,pad.t+plotH); ctx.stroke();
+
+  const tooltip = byId('chartTooltip');
+  if (chartMouseX !== null && chartMouseY !== null) {
+    const day = clamp((chartMouseX - pad.l) / plotW * d.maxTotalDays, 0, d.maxTotalDays);
+    let html = `<div class="font-bold text-gold">Day ${Math.round(day)} (${(day/365).toFixed(2)} yr)</div>`;
+    allV.forEach(v=>{ const c = costAt(v, day); html += `<div style="color:${v.color}">${v.name||v.label}: ${fmtINR(c,2)}</div>`; });
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (chartMouseX + 10) + 'px';
+    tooltip.style.top = (chartMouseY - 10) + 'px';
+  } else { tooltip.style.display = 'none'; }
+}
+
+chartCanvas.addEventListener('mousemove', (e)=>{
+  const rect = chartCanvas.getBoundingClientRect();
+  chartMouseX = e.clientX - rect.left;
+  chartMouseY = e.clientY - rect.top;
+});
+chartCanvas.addEventListener('mouseleave', ()=>{ chartMouseX = null; chartMouseY = null; });
+
+function updateStatsDOM(){ updateComparisonStats(); }
+
+function tick(ts){
+  if(lastTS===null) lastTS=ts;
+  const dt=clamp((ts-lastTS)/1000,0,0.1); lastTS=ts;
+  if(running && !completed){
+    const d=derived(); const prev=simDay; simDay=clamp(simDay+dt*state.timeWarp*BASE_DAYS_PER_SEC,0,d.maxTotalDays);
+    const be=estimateBreakevenDay(evVehicles[0],petrolVehicles[0]);
+    if(!breakevenTriggered && be!==null && prev<be && simDay>=be){ breakevenTriggered=true; triggerBreakevenEvent(be); }
+    else if(!breakevenTriggered && be!==null && be<=0.01 && prev<=0 && simDay>0){ breakevenTriggered=true; triggerBreakevenEvent(0); }
+    if(simDay>=d.maxTotalDays-1e-9) onComplete();
+  }
+  renderTrack(dt); drawChart(); updateStatsDOM(); requestAnimationFrame(tick);
+}
+
+function boot(){
+  rebuildAllPanels(); rebuildSpeedChips(); rebuildStatCards(); rebuildChartLegend();
+  resizeAll(); updateButtons(); requestAnimationFrame(tick);
+}
+boot();
+})();
+</script>
+</body>
+</html>
