@@ -1,0 +1,151 @@
+/* =========================================================
+   Responsive styles — Bike TCO Compare
+   ========================================================= */
+
+/* ---------- Large tablet / small desktop ---------- */
+@media (max-width: 1024px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .inputs-col {
+    order: 1;
+  }
+  .results-col {
+    order: 2;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .intro h1 { font-size: 26px; }
+  .lede { font-size: 14.5px; }
+  .np-defaults { font-size: 11.5px; }
+}
+
+/* ---------- Tablet ---------- */
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+  .header-inner { padding: 10px 16px; }
+  .brand-text strong { font-size: 15px; }
+  .brand-text small { font-size: 10.5px; }
+
+  .intro { padding: 28px 0 22px; }
+  .intro h1 { font-size: 22px; line-height: 1.25; }
+  .lede { font-size: 14px; }
+  .quick-templates { gap: 6px; }
+  .qt-btn { padding: 8px 12px; font-size: 12px; }
+
+  .main-grid { padding: 16px 16px 50px; gap: 16px; }
+  .step-card { padding: 16px 14px 18px; }
+  .step-head h2 { font-size: 15.5px; }
+  .step-help { margin-left: 0; font-size: 12px; }
+
+  .details-wrap {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .bike-details { padding: 12px; }
+
+  /* Verdict card */
+  .verdict-card { padding: 18px 16px 16px; }
+  .verdict-headline { font-size: 18px; }
+  .verdict-sub { font-size: 12.5px; }
+  .vbar-row {
+    grid-template-columns: 70px 1fr 88px;
+    gap: 8px;
+  }
+  .vbar-name { font-size: 11.5px; }
+  .vbar-amt { font-size: 11.5px; }
+
+  /* KPI */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi { padding: 12px 12px 10px; }
+  .kpi-value { font-size: 17px; }
+  .kpi-label { font-size: 10px; }
+  .kpi-foot { font-size: 10px; }
+
+  /* Chart cards */
+  .chart-card { padding: 14px 14px 12px; }
+  .chart-head { flex-direction: column; align-items: flex-start; }
+  .chart-head h3 { font-size: 14px; }
+  #costChart { height: 280px; }
+
+  /* Table — make first column sticky-ish on mobile, simplify */
+  .year-table { font-size: 12px; }
+  .year-table th, .year-table td { padding: 8px 8px; }
+
+  /* Header actions — hide text labels on small screens */
+  .ghost-btn span { display: none; }
+  .ghost-btn { padding: 9px; }
+  .cur-btn { padding: 6px 9px; font-size: 11px; }
+
+  .faq-card { padding: 14px; }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 480px) {
+  .intro h1 { font-size: 19px; }
+  .lede { font-size: 13px; }
+  .qt-label { display: block; width: 100%; margin-bottom: 4px; }
+  .qt-btn { font-size: 11.5px; padding: 7px 10px; }
+
+  .step-head h2 { font-size: 14.5px; }
+  .step-num { width: 22px; height: 22px; font-size: 11.5px; }
+
+  .verdict-headline { font-size: 16px; }
+  .vbar-row {
+    grid-template-columns: 60px 1fr 80px;
+    gap: 6px;
+  }
+  .vbar-amt { font-size: 11px; }
+
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi-value { font-size: 15px; }
+  .kpi-label { font-size: 9.5px; }
+
+  #costChart { height: 240px; }
+
+  .year-table th, .year-table td { padding: 7px 6px; font-size: 11px; }
+
+  .brand-text small { display: none; }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  body { background: #fff; color: #000; font-size: 11px; }
+  .site-header, .intro, .inputs-col, .site-footer,
+  .ghost-btn, .currency-switch, .qt-btn, .caret-btn,
+  .assumptions-card, .faq-card, #btnPrint, #btnReset {
+    display: none !important;
+  }
+  .main-grid {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 10px;
+  }
+  .results-col { order: 1; }
+  .verdict-card, .chart-card, .kpi {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+  .verdict-card { padding: 14px; }
+  .verdict-headline { font-size: 16px; color: #000; }
+  .kpi-value { color: #000 !important; }
+  .kpi-ev .kpi-value, .kpi.petrol .kpi-value, .kpi.save .kpi-value, .kpi.breakeven .kpi-value {
+    color: #000 !important;
+  }
+  #costChart { height: 240px; }
+  .chart-card { padding: 10px; }
+  .chart-head h3 { font-size: 13px; }
+  .year-table { font-size: 10px; }
+  .year-table th, .year-table td { padding: 5px 6px; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
